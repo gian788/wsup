@@ -1,0 +1,22 @@
+{	
+	"dqy": {
+		"name": "directQuery",
+		"worker": {
+			"config":{
+				"file": "/srv/server/direct_query/server.js",
+				"procType": 0,
+				"startProcNum": 1
+			}
+		}
+	},
+	"nlb": {
+		"name": "neoLib",
+		"worker": {
+			"config":{
+				"file": "/srv/server/neoLib.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	}
+}

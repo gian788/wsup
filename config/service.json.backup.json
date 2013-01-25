@@ -1,0 +1,132 @@
+{	
+	"crr": {
+		"name": "career",
+		"worker": {
+			"config":{
+				"file": "/srv/server/lib/controllers/career.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},
+	"cls": {
+		"name": "class",
+		"worker": {
+			"config":{
+				"file": "/srv/server/lib/controllers/class.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},
+	"dgp": {
+		"name": "degreeProgram",
+		"worker": {
+			"config":{
+				"file": "/srv/server/lib/controllers/degreeprogram.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},
+	"doc": {
+		"name": "document",
+		"worker": {
+			"config":{
+				"file": "/srv/server/lib/controllers/document.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},
+	"grp": {
+		"name": "group",
+		"worker": {
+			"config":{
+				"file": "/srv/server/lib/controllers/group.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},
+	"pll": {
+		"name": "poll",
+		"worker": {
+			"config":{
+				"file": "/srv/server/lib/controllers/poll.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},
+	"pst": {
+		"name": "post",
+		"worker": {
+			"config":{
+				"file": "/srv/server/lib/controllers/post.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},
+	"prf": {
+		"name": "professor",
+		"worker": {
+			"config":{
+				"file": "/srv/server/lib/controllers/professor.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},	
+	"rpt": {
+		"name": "report",
+		"worker": {
+			"config":{
+				"file": "/srv/server/lib/controllers/report.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},
+	"tpc": {
+		"name": "topic",
+		"worker": {
+			"config":{
+				"file": "/srv/server/lib/controllers/topic.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},
+	"uni": {
+		"name": "univeristy",
+		"worker": {
+			"config":{
+				"file": "/srv/server/university.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},
+	"usr": {
+		"name": "user",
+		"worker": {
+			"config":{
+				"file": "/srv/server/lib/controllers/user.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		}
+	},
+	"dqy": {
+		"name": "directQuery",
+		"worker": {
+			"config":{
+				"file": "/srv/server/direct_query/server.js",
+				"procType": 0,
+				"startProcNum": 1
+			}
+		}
+	}
+}

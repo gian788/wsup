@@ -1,0 +1,236 @@
+var servers = require(process.cwd() + '/config/servers.js');
+var helenus = require('helenus');
+
+var unreadNotifications_cf = 'UNotifications';
+var notifications_cf = 'Notifications';
+var defaultNumNotification = 10;
+var pool = new helenus.ConnectionPool({
+        hosts      : servers.CASSANDRA.hosts,
+        keyspace   : servers.CASSANDRA.keyspace,
+        user       : servers.CASSANDRA.user,
+        password   : servers.CASSANDRA.password,
+        timeout    : 3000
+        //cqlVersion : '3.0.0' // specify this if you're using Cassandra 1.1 and want to use CQL 3
+    });
+
+//if you don't listen for error, it will bubble up to `process.uncaughtException`
+//pools act just like connection objects, so you dont have to worry about api
+//differences when using either the pool or the connection
+/*pool.on('error', function(err){
+  console.error(err.name, err.message);
+});*/
+
+/*getLastNotifications = function(args, user, callback){
+  var userId = args._id;
+  pool.connect(function(err, keyspace){
+    if(err){
+      //TODO Log error
+      console.log(err);
+      return;
+    }
+    keyspace.get(unreadNotifications_cf, function(err, cfU){
+      if(err){
+        //TODO Log error
+        console.log(err)
+        return;
+      }
+      cfU.get(userId, function(err, row){
+        if(err){
+          //TODO Log error
+          console.log(err)
+          return;
+        }
+
+        var nots = [];
+        var i = 0;
+        for(;i < row.count; i++){
+          nots[i] = {
+              o: row[i].value,
+              t: row[i].name,
+              r: false
+          };
+        }
+
+        if(row.count < defaultNumNotification){
+
+          //retrieve already read notificaations
+          keyspace.get(notifications_cf, function(err, cfN){
+            if(err){
+              //TODO Log error
+              console.log(err)
+              return;
+            }
+            cfN.get(userId, {max: 2 * defaultNumNotification}, function(err, row2){
+              if(err){
+                //TODO Log error
+                console.log(err)
+                return;
+              }
+              var n = (defaultNumNotification - nots.length);              
+              if(n <= 0){
+                n = 0;
+              }
+              var oe = false;
+              for(var j = 0; j < row2.count; j++){
+                oe = false;
+                for(var k = 0; k < row.count; k++){
+                  if(nots[k].t == row2[j].name){
+                    oe = true;
+                    break;
+                  }
+                }
+                if(!oe){
+                  nots[i++] = {
+                      o: row2[j].value,
+                      t: row2[j].name,
+                      r: true
+                  };
+                }
+                if(nots.length >= defaultNumNotification){
+                  break;
+                }
+              }
+              callback(err, nots);
+            });
+          });
+        }
+        else{
+          callback(err, nots);
+        }
+      });
+    });
+  });
+}*/
+
+getNewNotifications = function(args, user, callback){
+  var userId = args._id;
+  pool.connect(function(err, keyspace){
+    if(err){
+      //TODO Log error
+      console.log(err);
+      return;
+    }
+    keyspace.get(unreadNotifications_cf, function(err, cf){
+      if(err){
+        //TODO Log error
+        console.log(err);
+        callback(err, null);
+        return;
+      }
+      cf.get(userId + ':' + classId, function(err, row){
+        if(err){
+          //TODO Log error
+          console.log(err);
+          return;
+        }
+        callback(err, row);
+      });
+    });
+  });
+}
+
+getNotifications = function(args, user, callback){
+  var userId = args._id;
+  var classId = args.class;
+  if(!classId){
+    callback('no class specified', null);
+    return;
+  }
+  if(!args.startFrom)
+    startFromNotifications = null;
+  else
+    startFromNotifications = args.startFrom;
+  if(!args.num)
+    num = defaultNumNotification;
+
+  pool.connect(function(err, keyspace){
+    if(err){
+      //TODO Log error
+      console.log(err);
+      return;
+    }
+    keyspace.get(notifications_cf, function(err, cf){
+      if(err){
+        //TODO Log error
+        console.log(err)
+        return;
+      }
+      cf.get(userId + ':' + classId, {start: startFromNotifications, max: num}, function(err, row){
+        if(err){
+          //TODO Log error
+          console.log(err)
+          return;
+        }
+        //console.log(row)
+        callback(err, row);
+      });
+    });
+  });
+}
+
+getNotificationsCount = function(args, user, callback){
+  userId = args._id;
+  pool.connect(function(err, keyspace){
+    if(err){
+      //TODO Log error
+      console.log(err);
+      return;
+    }
+    keyspace.get(unreadNotifications_cf, function(err, cf){
+      if(err){
+        //TODO Log error
+        console.log(err)
+        return;
+      }
+      cf.get(userId, function(err, row){
+        if(err){
+          //TODO Log error
+          console.log(err)
+          return;
+        }
+        callback(err, row.count);
+      });
+    });
+  });
+}
+
+setReadNotifications = function(args, user, callback){
+  userId = args._id;
+  notifications = args.nots;
+  if(typeof(notifications) != 'Array'){
+    notifications = [notifications];
+  }
+  pool.connect(function(err, keyspace){
+    if(err){
+      //TODO Log error
+      console.log(err);
+      callback(err, null);
+      return;
+    }
+    keyspace.get(notifications_cf, function(err, cf){
+      if(err){
+        //TODO Log error
+        callback(err, null);
+        return;
+      }
+      for(var n in notifications){
+        console.log('DELETE ? FROM ? WHERE KEY = ?;', [notifications[n], unreadNotifications_cf, userId])
+        pool.cql('DELETE ? FROM ? WHERE KEY = ?;', [notifications[n], unreadNotifications_cf, userId], function(err,res){
+          if(err){
+            //TODO Log error
+            console.log(err)
+            callback(err, null);
+            return;
+          }
+        });
+      }      
+      callback(null,null);
+    });
+  });
+}
+
+exports.getnew = getNewNotifications;
+//exports.getnotifications = getNotifications;
+exports.get = getNotifications;
+exports.updatereadnotifications = setReadNotifications;
+exports.getcount = getNotificationsCount;

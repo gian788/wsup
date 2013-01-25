@@ -1,0 +1,13 @@
+{	
+	"hnt": {
+		"name": "HiNot",
+		"worker": {
+			"config":{
+				"file": "/srv/server/serviceWrap.js",
+				"procType": 3,
+				"startProcNum": 1
+			}
+		},		
+		"sharable": false
+	}
+}

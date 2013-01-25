@@ -1,0 +1,13 @@
+{	
+	"dqy": {
+		"name": "directQuery",
+		"worker": {
+			"config":{
+				"file": "/srv/server/direct_query/server.js",
+				"procType": 0,
+				"startProcNum": 1
+			}		
+		},		
+		"sharable": false
+	}
+}

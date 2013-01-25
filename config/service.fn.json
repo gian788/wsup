@@ -1,0 +1,84 @@
+{
+	"crr": [
+		"addclass",
+		"addcompleteclass",
+		"getclass",
+		"removeclass",
+		"updateclass"
+	],
+	"cls": [
+		"index",
+		"get",
+		"getpublichistory",
+		"getpublichistory",
+		"getstudenthistory",
+		"getprofessorhistory",
+		"getstudents"
+	],
+	"dgp": [
+		"index",
+		"get"
+	],
+	"doc": [
+		"index",
+		"get",
+		"add",
+		"index",
+		"getserver",
+		"addserver",
+		"remove"
+	],
+	"grp": [
+		"get",
+		"getstudents",
+		"add",
+		"gethistory"
+	],
+	"not": [
+		"getnew",
+		"get",
+		"updatereadnotifications",
+		"getcount"
+	],
+	"pll": [
+		"addvote"
+	],
+	"pst": [
+		"index",
+		"add",
+		"remove"
+	],
+	"pfr": [
+		"getclass",
+		"addclass"
+	],
+	"rgs": [
+		"addcompletestudent",
+		"addcompleteprofessor",
+		"getuniversity"
+	],
+	"rpt": [
+		"add"
+	],
+	"tpc": [
+		"index",
+		"get",
+		"add",
+		"getpost",
+		"addpost",
+		"remove"
+	],
+	"uni": [
+		"index", "search", "get", "degreeprograms"
+	],
+	"usr": [
+		"addfriend",
+		"getactivecareer",
+		"index",
+		"update",
+		"getfriends",
+		"get",
+		"removefriend",
+		"updatepassword"
+	]
+}

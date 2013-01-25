@@ -1,0 +1,13 @@
+{	
+	"nlb": {
+		"name": "neoLib",
+		"worker": {
+			"config":{
+				"file": "/srv/server/neoLib.js",
+				"procType": 10,
+				"startProcNum": 1
+			}
+		},
+		"sharable": true
+	}
+}
