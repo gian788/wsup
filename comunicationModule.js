@@ -121,6 +121,7 @@ Service = function(name, cm, callback){
 		 	,host_order_deterministic: false
 		}).get*/
 		console.log('config:service:' + name + ':fn')
+		/*
 		require('redis').createClient(6479, '192.168.16.128').smembers('config:service:' + name + ':fn', function(err, availFn){
 			if(err){
 				if(callback)
@@ -148,10 +149,9 @@ Service = function(name, cm, callback){
 			if(callback)
 				callback(null, self);
 		});
-
-			//console.log('availFn',availFn)
+		*/
 			
-		/*self['fn'] = function(){
+		self['fn'] = function(){
 			if(typeof(arguments[arguments.length - 1]) != 'function'){
 				throw 'Missing callback';
 			}
@@ -164,7 +164,7 @@ Service = function(name, cm, callback){
 		self.emit('ready');
 		if(callback)
 			callback(null, self);
-		*/
+		
 	});	
 }
 
