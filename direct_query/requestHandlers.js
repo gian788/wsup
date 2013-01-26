@@ -52,8 +52,7 @@ exports.handle = function(controller, func, args, request, response, user){
 			return replay(400, null, response);
 		break;
 	}
-	var serveController = function(err, result){
-		//console.log('rep', service,controller,func)
+	var serveController = function(err, result){		
 		if(err){
 			replay(err, null, response);
 			return;
@@ -61,8 +60,6 @@ exports.handle = function(controller, func, args, request, response, user){
 		replay(null, result, response);
 	}
 	var callFunc = function(){
-		//console.log(services[service])
-		console.log('callFunc', service,controller,func)
 		if(service == 'neoLib' || service == 'HiNot'){
 			if(services[service].state == 1){
 				services[service].fn(controller, func, args, user, serveController);	
@@ -76,7 +73,7 @@ exports.handle = function(controller, func, args, request, response, user){
 
 	delete args['sessid'];
 	var service = controllersConfig.getControllerService(controller, user);
-	console.log(service, controller, func)
+	//console.log(service, controller, func)
 	if(!services[service]){
 		services[service] = cm.getService(controllersConfig.getServicePrefix(service), function(err, res){
 			if(err){
@@ -98,6 +95,7 @@ replay = function(error, result, res){
   		/*if(error == 401){
   			res.writeHead(401, {'Content-Type': 'text/plain','Access-Control-Allow-Origin':'*', 'Access-Control-Allow-Headers':['X-Requested-With','Range','Content-Type']});	
   		}*/
+  		console.log(error)
   		if(typeof(error) == 'number'){
   			res.writeHead(error, {'Content-Type': 'text/plain','Access-Control-Allow-Origin':'*', 'Access-Control-Allow-Headers':['X-Requested-With','Range','Content-Type']});	
   		}else{

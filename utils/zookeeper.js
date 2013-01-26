@@ -17,17 +17,13 @@ Zookeeper.prototype.setNode = function(path, data, callback){
 	var self = this;
 	self.zk.a_exists(path, false, function(rc, err, stat){
 	  	if(rc == ZooKeeper.ZOK){
-	  		//console.log(path, 'update');
 	  		self.zk.a_set(path, data, stat.version, function(rc, err, stat){
-	  			//console.log(rc, err, path);
 		    	if (rc != 0)
 		            return callback(err, null);
 		        callback(null, data);
 	  		});
 	  	}else{
-	  		//console.log(path, 'insert');
 	  		self.zk.a_create(path, data, 0, function(rc, err, path){
-	  			//console.log(rc, err, path);
 		    	if (rc != 0)
 		            return callback(err, null);
 		        callback(null, data);
@@ -39,12 +35,10 @@ Zookeeper.prototype.setNode = function(path, data, callback){
 Zookeeper.prototype.existsParentNode = function(path, callback){
 	var self = this;
 	self.zk.a_exists (path, false, function(rc, err, stat){
-	  	//console.log(rc, err, stat);
 	  	if(rc == ZooKeeper.ZNONODE){
 	  		var newPath = path.substring(0, path.lastIndexOf('/'));
 	  		if(newPath.length == 0)
 	  			newPath = '/';
-	  		//console.log(newPath)
 	  		self.existsParentNode(newPath, callback);
 	  	}else
 	  		return callback(err, path);
@@ -57,15 +51,13 @@ Zookeeper.prototype.set = function(path, data, callback){
 		if(res.length == 1)
 			res = '';		
 		var remaining = path.substring(res.length + 1).split('/');
-		//console.log(res, remaining)
 		if(remaining.length == 0)
 			remaining.push('');
 		var i = 0;
 		var recFn = function(){
 			res += '/' + remaining[i++];			
 			if(res.length > 1 && res[res.length - 1] == '/')
-				res = res.substring(0, res.length - 1)
-			//console.log('rec', i, res, remaining.length);			
+				res = res.substring(0, res.length - 1)		
 			if(i < remaining.length){
 				self.setNode(res, '', function(err, r){
 				    if (err)
@@ -84,7 +76,6 @@ Zookeeper.prototype.set = function(path, data, callback){
 
 Zookeeper.prototype.get = function(path, callback){
 	this.zk.a_get(path, false, function(rc, err, stat, data){
-		//console.log(rc, err, stat, data);
 		if(rc != 0)
 			if(rc == ZooKeeper.ZNONODE)
 				return callback(null, null, null);
@@ -97,7 +88,6 @@ Zookeeper.prototype.get = function(path, callback){
 Zookeeper.prototype.getChildren = function(path, callback){
 	var self = this;
 	self.zk.a_get_children(path, false, function(rc, err, children){
-	    //console.log(rc, err, children)
 	    if(rc != 0)
 	    	return callback(err, null);
 	    if(children.length == 0)
@@ -110,7 +100,6 @@ Zookeeper.prototype.getChildren = function(path, callback){
 	    		self.get(path + '/' + srv, function(err, res){
 		    		if(err)
 		    			return callback(err, null);
-		    		//console.log(srv, res)
 		    		ch[srv] = res;
 		    		if(++count == children.length)
 		    			return callback(null, ch);
@@ -141,13 +130,11 @@ Zookeeper.prototype.del = function(path, callback){
 
 Zookeeper.prototype.watchChildren = function(path, cbChildren, cbWatch){
 	this.zk.aw_get_children(path, function(type, state, path){
-		//console.log('watch', type, state, path)
 		if(type == ZooKeeper.ZOO_CHILD_EVENT)
 			cbWatch(null);
 		else
 			cbWatch(type, path);
 	}, function(rc, err, children){
-		//console.log('children', rc, err, children)
 		if(rc != 0)
 	    	return cbChildren(err, null);
 	    return cbChildren(null, children);

@@ -5,7 +5,7 @@
 			"config":{
 				"file": "/srv/server/neoLib.js",
 				"procType": 10,
-				"startProcNum": 1
+				"startProcNum": 2
 			}
 		},
 		"sharable": true

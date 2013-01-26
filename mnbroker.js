@@ -23,11 +23,14 @@ const STATE_OFF = -1,
 
 const SUB_ALL = 'ALL';
 
+const PUB_INTERVALL = 20000;//ms
+
 var replyQueue = {},
 	waitingReadyQueue = {},	
 	nextReqId = 1;
 
 process.on('exit', function(){
+	console.log('exit')
 	mnb_close();
 })
 
@@ -54,7 +57,6 @@ var broker_add_worker = function(service, n, callback){
 			}else{
 				res['procType'] = worker.config.procType;
 				res['type'] = confMod.TYPE_WORKER;
-				//console.log(res)
 	  			config.addServiceProcess(service, res, function(err, r){
 	  				count++;
 	  				if(callback && count + errs.length >= n){
@@ -80,7 +82,7 @@ var broker_rem_woker = function(service, n, callback){
 		i = 0,
 		errs = [],
 		proc = config.services[service].worker.proc,
-		brokerId = config.services[service].broker.id
+		brokerId = config.services[service].broker.id;
 
 	if(typeof(n) == 'number'){
 		if(proc.length < n)
@@ -90,31 +92,28 @@ var broker_rem_woker = function(service, n, callback){
 				break;
 			(function(){
 				var wId = id;
-				//send(brokerId, REQ_REM_PEER, {n: n}, function(err, res){
-					lrpManager.stopProcess(wId, function(err, res){
-						if(err){
-							errs.push(err);
-						}else{
-							delete proc[wId];
-							count++;	
-						}
-						if(callback && count + errs.length >= n)
-							config.remServiceProcess(service, wId, function(err, res){
-								if(errs.length > 0)
-									callback(errs, count);
-								else
-									callback(null, count);	
-							});
-					});
-				//});
+				lrpManager.stopProcess(wId, function(err, res){
+					if(err){
+						errs.push(err);
+					}else{
+						delete proc[wId];
+						count++;	
+					}
+					if(callback && count + errs.length >= n)
+						config.remServiceProcess(service, wId, function(err, res){
+							if(errs.length > 0)
+								callback(errs, count);
+							else
+								callback(null, count);	
+						});
+				});
 			})();		
 		}
 	}
 
 	if(typeof(n) == 'object'){
 		for(var i in n){
-			if(proc[i]){
-				//send(brokerId, REQ_REM_PEER, {id: config.services[service].worker.proc[n[i]].sockId}, function(err, res){
+			if(proc[i]){				
 				(function(){
 					var wId = i;
 					lrpManager.stopProcess(n[wId], function(err, res){
@@ -133,7 +132,6 @@ var broker_rem_woker = function(service, n, callback){
 							});
 					});
 				});
-				//});
 			}
 		}
 	}
@@ -148,14 +146,15 @@ var broker_rem_woker = function(service, n, callback){
   */
 var broker_add_peer = function(service, peer, callback){	
 	//check if is already set the peer on service
-	console.log('broker_add_peer', service, peer)
+	//console.log('broker_add_peer', service, peer)
 	if(!config.services[service].peers[peer])
 		return callback('Error broker_add_peer: Wrong arguments.', null);
 	var peerInfo = config.services[service].peers[peer],
 		addr = peerInfo.socket.addr,
 		id = peerInfo.socket.id;
-	socket_ctr.send([config.services[service].broker.id, utils.stringify({req:REQ_ADD_PEER, addr: addr, id: id})]);
-	config.addServicePeer(service, peer, peerInfo, callback);
+	//console.log([config.services[service].broker.id, utils.stringify({req:REQ_ADD_PEER, addr: addr, id: id})])
+	socket_ctr.send([config.services[service].broker.id, utils.stringify({req:REQ_ADD_PEER, addr: addr, id: id})]);	
+	callback(null, null);
 }
 
 /** 
@@ -195,14 +194,15 @@ var mnb_init = function(callback){
 		config.checkProcess(lrpManager, function(err, res){
 			if(err)
 				console.log(err);
-				
-			console.log('Check prev. active process: ' + (res ? 'OK' : 'some wrong process'));
+			if(res)	
+				console.log('Check prev. active process: OK')
+			else
+				console.log('Inctive process removed');
 		
 			var count = 0,
 				servicesNum = utils.length(config.services),
 				errs = [];
 			//start services
-			console.log(config.services)
 			for(var i in config.services){		
 				(function(){
 					var srv = i;
@@ -211,7 +211,7 @@ var mnb_init = function(callback){
 							errs.push(err);
 						console.log('Service - ' + config.services[srv].name + ' \t---\tUP')
 						count++;
-						if(count >= servicesNum){
+						if(count == servicesNum){
 							console.log(count + ' services started');									
 							if(errs.length == 0)						
 								return callback(null, count);
@@ -224,53 +224,51 @@ var mnb_init = function(callback){
 	}
 
 	lrpManager = lrp.Manager();
-	config.newId(function(err, res){
+	config.newNode(function(err, res){
 		//setup control socket		
 		config.loadAndSetNodeInfo(function(){
 			//console.log(config)
-			//TODO PREV CONFIG
-			socket_ctr.identity = config.node.id + 'mnb000001';
+			//console.log(config.mnb)
+			socket_ctr.identity = config.mnb.controlId;
 			socket_ctr.bindSync(config.mnb.controlAddress);
-			socket_sub.subscribe(SUB_ALL);
-			socket_pub.identity = config.node.id + 'mnbpub001';			
-			socket_pub.bindSync(config.mnb.pubAddress);
 			socket_ctr.on('message', handleControlMessage);	
 
-			/*config.watchPeers(function(err, res){
-				console.log(err, res)
+			socket_sub.subscribe(SUB_ALL);			
+			socket_sub.subscribe(config.node.id);
+			socket_sub.on('message', handleSubMessage);
+
+			socket_pub.identity = config.mnb.pubId;			
+			socket_pub.bindSync(config.mnb.pubAddress);
+			setInterval(mnb_pub_nodeInfo, PUB_INTERVALL);
+
+
+			config.watchPeers(function(err, res){
+				console.log('watch', err, res)
 				if(config.peers[res])
 					handlePeerDown(res);
 				else
 					handlePeerUp(res);
-			});*/
-
-			config.setNodePublicSocket({addr:config.mnb.pubAddress, id: socket_pub.identity}, function(err, res){
-				if(err){
-					console.log('err: ', err);
-				}				
-				//load config from json
-				loadServiceInfo(function(err, res){
-					//console.log(err, res)
-
-					//mnb peers discovery
-					config.peersDiscovery(function(err, res){
-						if(err){
-							console.log('err: ', err);
-						}
-						//console.log(res)
-						for(var i in res){
-							mnb_add_peer(i);	
-						}
-
-						//start lrp manager
-						if(lrpManager.isReady())
-							startServices();
-						else{
-							lrpManager.on('ready', startServices);
-						}
-					});
-				});
 			});
+
+			loadServiceInfo(function(err, res){
+				//console.log(err, res)
+				//mnb peers discovery
+				config.peersDiscovery(function(err, res){
+					if(err){
+						console.log('err: ', err);
+					}
+					//console.log('res', res)
+					for(var i in res){
+						mnb_add_peer(i);	
+					}
+					//start lrp manager
+					if(lrpManager.isReady())
+						startServices();
+					else{
+						lrpManager.on('ready', startServices);
+					}
+				});
+			});			
 		});
 	});
 }
@@ -298,21 +296,26 @@ var mnb_start_service = function(service, callback){
 	var active = function(){
 		config.services[service].state = STATE_READY;//			
 		//console.log(service, config.services[service].worker.config)
+		//console.log('waitingReadyQueue')
+		//console.log(config.services[service].peers)
 
-		console.log('waitingReadyQueue')
-		console.log(config.services[service].peers)
-
+		var count = 0,
+			len = 0;
 		if(config.services[service].worker && config.services[service].worker.config)
-			mnb_active_service(service, callback);
+			len++;
 		if(utils.length(config.services[service].peers) > 0)
-			mnb_active_remote_service(service, callback);
+			len++;
+		var fn = function(err, res){
+			if(++count == len)
+				return callback(null, null);
+		}
+		if(config.services[service].worker && config.services[service].worker.config)
+			mnb_active_service(service, fn);
+		if(utils.length(config.services[service].peers) > 0)
+			mnb_active_remote_service(service, fn);
 	};
 	//console.log('start service ', service, config.services[service].broker)
-	if(config.services[service].broker.proc){
-		//broker already active
-		//console.log(service, ' broker already up', config.services[service].broker.proc)
-		active();		
-	}else{
+	
 		var broker = config.services[service].broker;
 		var id = config.newSocketId(service, confMod.TYPE_BROKER);
 		if(!id)
@@ -322,8 +325,14 @@ var mnb_start_service = function(service, callback){
 			args.push(broker.config.args[i]);
 
 		waitingReadyQueue[id] = active;
+
+	if(config.services[service].broker.proc){
+		//broker already active
+		active();		
+	}else{
 		lrpManager.startProcess(broker.config.file ? broker.config.file : config.broker.defaultPath, args, [], {service: service, type: confMod.TYPE_BROKER, procType: lrp.TYPE_GENERIC}, function(err, res){
 			//console.log('started broker',service);
+			//console.log('start broker', service, 'peers', config.services[service].peers)
 			if(err)
 				return callback(err, null);
 			config.services[service].state = STATE_INIT;//		
@@ -354,7 +363,6 @@ var mnb_active_service = function(service, callback){
 	
 	if(config.services[service].state != STATE_READY)
 		return callback('Error: service not ready', null);
-	//console.log(service)
 	if(worker.proc &&  worker.config){
 		
 		if(utils.length(worker.proc) >= worker.config.startProcNum)
@@ -369,19 +377,9 @@ var mnb_active_service = function(service, callback){
 
 	broker_add_worker(service, num, function(err, res){
 		config.services[service].state = STATE_ACTIVE;//
-		var socket = config.services[service].broker.config.socket;
-		/*config.setServiceInfo(service, {socket: {addr: socket.cfa, id: socket.cfi}}, function(e, r){
-			if(e){
-				if(err){
-					err.push(e);
-				}else
-					callback(e, res);	
-			}else{
-				callback(err, res);
-			}
-		})*/
-		callback(err, res);
-		//notify to other peers
+		var socket = config.services[service].broker.config.socket;		
+		callback(err, res);		
+		mnb_pub_nodeInfo();
 	});		
 }
 
@@ -399,7 +397,7 @@ var mnb_active_remote_service = function(service, callback){
 	//console.log(service,  'peers', peers)
 	if(!peers)
 		return callback('No peers found for service ' + service, null);
-	//console.log(config.services)
+	//console.log(config.services)	
 	for(var i in peers){
 		broker_add_peer(service, i, function(err, res){			
 			if(err)
@@ -444,20 +442,61 @@ var mnb_stop_service = function(service, onlyWorker, callback){
   */
 var mnb_add_peer = function(nodeId){
 	socket_sub.connect(config.peers[nodeId].socket.addr);
-	socket_sub.subscribe(config.node.id);		
+	console.log('connected to', config.peers[nodeId].socket.addr)
 }
 
+
+
+var handlePeerUp = function(peerId){
+	var self = this;	
+	var count = 0;
+	//console.log('peer up')
+	config.getPeerSocketInfo(peerId, function(err, res){
+		//console.log(err, res)
+		if(err)
+			return;		
+		//if(!res.addr || !res.id)
+		//	return;
+		if(!config.peers[peerId])
+			config.peers[peerId] = {};
+		config.peers[peerId].socket = {
+			addr: res.addr,
+			id: res.id
+		};		
+		//console.log(config.peers)
+		mnb_add_peer(peerId);
+	});
+}
+
+var handlePeerDown = function(peerId){
+	var self = this;
+	if(!self.peers[peerId])
+		return;
+	delete self.peers[peerId];
+	for(var i in self.services)
+		if(self.services[i].peers[peerId])
+			config.remServicePeer(i, peerId, function(err, res){});	
+	console.log('deleted', peerId, self.peers)
+}
 
 /** 
   * Publish node info like service status, perf index, ecc  
   */
 var mnb_pub_nodeInfo = function(){
-	//realtime 
-	//0mq pub
-
-
-	//static
-	//zookper
+	var info = {
+		node: config.node.id,
+		services: {},
+		peers: config.peers
+	};
+	for(var i in config.services){
+		if(config.services[i].sharable)
+			info.services[i] = {
+				addr: config.services[i].broker.config.socket.cfa,
+				id: config.services[i].broker.config.socket.cfi,
+				workers: utils.length(config.services[i].worker.proc)
+			}
+	}
+	socket_pub.send(SUB_ALL + ' ' + utils.stringify(info));
 }
 
 /** 
@@ -514,6 +553,36 @@ var handleControlMessage = function(){
 		    delete replyQueue[msg.reqId];
 		}
 	}
+}
+
+var handleSubMessage = function(data){
+	data = data.toString();
+	var msg = utils.parse(data.substring(data.indexOf(' ')));
+	//console.log(msg)
+	for(var i in msg.services){
+		var srv = i;
+		if(config.services[srv]){
+			if(!config.services[srv].peers[msg.node])
+				config.addServicePeer(srv, msg.node, msg.services[srv], function(err, res){
+					if(err)
+						return;
+					broker_add_peer(srv, msg.node);
+				});	
+		}else{
+			config.setServiceInfo(srv, {}, function(err, res){
+				if(err)
+					return console.log(err);
+				config.addServicePeer(srv, msg.node, {socket: msg.services[srv]}, function(err, res){
+					if(err)
+						return;
+					mnb_start_service(srv, function(err, res){
+						if(err)
+							return console.log(err);						
+					});					
+				});
+			});
+		}
+	}
 }	
 
 /**
@@ -558,20 +627,6 @@ var handleReady = function(brokerId){
 }
 
 
-var newPeerLocalInfo = function(type, id, address){
-	//TODO
-	/*if(!brokers[type])
-		return;
-
-	var config = {
-		id: id,
-		addr: address
-	}
-
-	socket_ctr.send([brokers[type], JSON.stringify(config)]);*/
-}
-
-
 /** Return connection information for sending request to the specified 
   * service and send it to the broker.
   * @param string service
@@ -605,6 +660,29 @@ var loadServiceInfo = function(callback){
 }
 
 
+/* START UP SCRIPT */
+
+var printHeader = function(){
+	str = '\n';
+	str += '__/\\\\\\______________/\\\\\\_____/\\\\\\\\\\\\\\\\\\\\\\____/\\\\\\________/\\\\\\__/\\\\\\\\\\\\\\\\\\\\\\\\\\___        ' + '\n';
+	str += '\\ _\\/\\\\\\_____________\\/\\\\\\___/\\\\\\/////////\\\\\\_\\/\\\\\\_______\\/\\\\\\_\\/\\\\\\/////////\\\\\\_       ' + '\n';
+	str += '\\\\ _\\/\\\\\\_____________\\/\\\\\\__\\//\\\\\\______\\///__\\/\\\\\\_______\\/\\\\\\_\\/\\\\\\_______\\/\\\\\\_      ' + '\n';
+	str += '\\\\\\ _\\//\\\\\\____/\\\\\\____/\\\\\\____\\////\\\\\\_________\\/\\\\\\_______\\/\\\\\\_\\/\\\\\\\\\\\\\\\\\\\\\\\\\\/__     ' + '\n';
+	str += '\\\\\\\\ __\\//\\\\\\__/\\\\\\\\\\__/\\\\\\________\\////\\\\\\______\\/\\\\\\_______\\/\\\\\\_\\/\\\\\\/////////____    ' + '\n';
+	str += '\\\\\\\\\\ ___\\//\\\\\\/\\\\\\/\\\\\\/\\\\\\____________\\////\\\\\\___\\/\\\\\\_______\\/\\\\\\_\\/\\\\\\_____________   ' + '\n';
+	str += '\\\\\\\\\\\\ ____\\//\\\\\\\\\\\\//\\\\\\\\\\\______/\\\\\\______\\//\\\\\\__\\//\\\\\\______/\\\\\\__\\/\\\\\\_____________  ' + '\n';
+	str += ' \\\\\\\\\\\\ _____\\//\\\\\\__\\//\\\\\\______\\///\\\\\\\\\\\\\\\\\\\\\\/____\\///\\\\\\\\\\\\\\\\\\/___\\/\\\\\\_____________ ' + '\n';
+	str += '  \\\\\\\\\\\\ ______\\///____\\///_________\\///////////________\\/////////_____\\///______________' + '\n';
+	str += '   \\\\\\\\\\\\ ________________________________________________________________________________\n';
+	str += '    \\\\\\\\\\\\_____________  __  _________________________________________  _  _______________\n';
+	str += '     \\\\\\\\\\____________  / _|                                           | | _______________\n';
+	str += '      \\\\\\\\____________ | |_ _ __ __ _ _ __ ___   _____      _____  _ __| | __ ____________\n';
+	str += '       \\\\\\____________ |  _| \'__/ _` | \'_ ` _ \\ / _ \\ \\ /\\ / / _ \\| \'__| |/ / ____________\n';
+	str += '        \\\\____________ | | | | | (_| | | | | | |  __/\\ V  V / (_) | |  |   <  ____________\n';
+	str += '         \\____________ |_| |_|  \\__,_|_| |_| |_|\\___| \\_/\\_/ \\___/|_|  |_|\\_\\ ____________\n\n';
+	console.log(str)
+}
+
 
 //TODO DELETE DEBUG ONLY
 if(process.argv.length < 3){
@@ -612,7 +690,7 @@ if(process.argv.length < 3){
 	process.exit();
 }
 
-
+printHeader();
 mnb_init(function(err, res){
 	if(err)
 		console.log(err)

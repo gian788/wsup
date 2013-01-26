@@ -98,7 +98,6 @@ Service = function(name, cm, callback){
 	this.cm.services[name] = {state: 0};
 	var self = this;
 
-	console.log('service: ', name)
 	config.getService(name, function(err, res){
 		if(err){
 			if(callback)
@@ -113,15 +112,9 @@ Service = function(name, cm, callback){
 		self.cm.brokers[name] = res.broker.config.socket.lfi;
 		self.cm.router.connect(res.broker.config.socket.lfa);
 		console.log(name, res.broker.config.socket.lfa, res.broker.config.socket.lfi)
-		//console.log('config:service:' + name + ':fn')
-		/*zk = ZooKeeper.Zookeeper({
-			connect: "localhost:2181"
-		 	,timeout: 200000
-		 	,debug_level: ZooKeeper.ZOO_LOG_LEVEL_WARNING
-		 	,host_order_deterministic: false
-		}).get*/
-		console.log('config:service:' + name + ':fn')
+				
 		/*
+		console.log('config:service:' + name + ':fn')
 		require('redis').createClient(6479, '192.168.16.128').smembers('config:service:' + name + ':fn', function(err, availFn){
 			if(err){
 				if(callback)

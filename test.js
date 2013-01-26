@@ -17,6 +17,13 @@ var ZooKeeper = require ("./utils/zookeeper"),
 zk.delTree('/peer', function(err, res){
 	console.log(err, res)
 })
+/*
+
+zk.zk.aw_get('/peer/004/socket/pub', function(type, state, path){
+	console.log(type, state, path);
+	}, function(rc, error, stat, data){
+		console.log(rc, error, stat, data);
+	});
 
 /*ar = [1,2,3,4,5,6,7,8,9,10]
 

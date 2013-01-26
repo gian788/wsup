@@ -45,11 +45,10 @@ function Config(options){
 	this.zk = ZooKeeper.Zookeeper({
 		connect: "localhost:2181"
 	 	,timeout: 200000
+	 	//,timeout: 315360000000 //10 anni
 	 	,debug_level: ZooKeeper.ZOO_LOG_LEVEL_WARNING
 	 	,host_order_deterministic: false
-	});
-
-	//this.redisShared = redis.createClient(6479, '192.168.16.128'),
+	});	
 	this.redisLocal  = redis.createClient(6379, '127.0.0.1');
 
 	this.node = {
@@ -58,6 +57,7 @@ function Config(options){
 	this.mnb = {
 		controlAddress: 'ipc:///tmp/mnb_ctr',
 		pubAddress: 'tcp://127.0.0.1:7123',
+		pubPort: 7123,
 	},
 	this.broker = {
 		defaultPath: '/srv/server/remoteB',
@@ -339,12 +339,6 @@ Config.prototype.checkProcess = function(service, lrp, callback){
 	}
 }
 
-
-
-
-
-
-
 Config.prototype.loadNodeInfo = function(callback){
 	var self = this;
 	self.redisLocal.get(prefix.node.ip, function(err, ip){
@@ -368,7 +362,7 @@ Config.prototype.loadNodeInfo = function(callback){
   * Return a new socket id
   * @param function callback callback function where res is the socket id
   */
-Config.prototype.newId = function(callback){
+Config.prototype.newNode = function(callback){
 	var self = this;
 	var newId;
 	var watch = false;
@@ -394,9 +388,16 @@ Config.prototype.newId = function(callback){
 					newId = '0' + newId;
 				if(!watch){
 					self.node.hash = utils.getHash(10);
-					self.zk.set('/peer/' + newId, self.node.hash, function(err, res){
+					self.mnb.pubId = newId + 'mnbpub001';
+					self.mnb.controlId = newId + 'mnb000001';
+					self.mnb.pubAddress = 'tcp://' + self.node.ip + ':' + self.mnb.pubPort;
+					var info = {
+						hash: self.node.hash,
+						addr: self.mnb.pubAddress,
+						id: self.mnb.pubId
+					}					
+					self.zk.set('/peer/' + newId, utils.stringify(info), function(err, res){
 						self.zk.set('/peer/' + newId + '/service', '', function(err, res){
-							//console.log('set newId: ' + newId, err, res);
 							self.redisLocal.set(prefix.node.id, newId, function(err, res){
 								self.node.id = newId;
 								self.redisLocal.set(prefix.node.hash, self.node.hash, function(err, res){								
@@ -411,7 +412,6 @@ Config.prototype.newId = function(callback){
 					setNewId();
 				}	
 			}, function(err, res){
-				//console.log('watch',err, res)
 				watch = true;				
 			});							
 	};
@@ -423,11 +423,8 @@ Config.prototype.newId = function(callback){
 		self.redisLocal.get(prefix.node.hash, function(err, hash){
 			if(err)
 				return callback(err, null);
-			//console.log("Prev conf: ", id, hash)
-
 			if(id && hash){
-				self.zk.get('/peer/' + id, function(err, res){
-					//console.log('exists', err, res.toString())			
+				self.zk.get('/peer/' + id, function(err, res){		
 					if(err)
 						return callback(err, null);
 					if(!res){
@@ -437,9 +434,12 @@ Config.prototype.newId = function(callback){
 							setNewId();
 						});
 					}else{
-						//console.log('zkHash', res.toString())
-						if(hash == res.toString()){
+						res = utils.parse(res);
+						if(hash == res.hash){
 							self.node.id = id;
+							self.mnb.controlId = self.node.id + 'mnb000001';
+							self.mnb.pubId = res.id;
+							self.mnb.pubAddress = res.addr;
 							return callback(null, id);
 						}else
 							setNewId();
@@ -468,7 +468,6 @@ Config.prototype.peersDiscovery = function(callback){
 			numPeers = utils.length(p);
 
 		var endFunc = function(){
-			//console.log(self.peers)
 			if(++count == numPeers){				
 				self.peersServices(self.peers, function(err, res){					
 					if(err){
@@ -479,30 +478,16 @@ Config.prototype.peersDiscovery = function(callback){
 				});
 			}
 		};
-
 		for(var i in p){
-			if(i != self.node.id){
+			if(i != self.node.id && p[i].toString() != ''){
 				if(!self.peers[i]){
 					self.peers[i] = {};					
 				}
-				(function(){
-					var peer = i;
-					self.zk.get('/peer/' + peer + '/socket/pub', function(err, res){
-						if(err){
-							return callback(err, null);
-						}
-						//console.log(peer, prefix.peer + peer + ':' + prefix.socket, res)
-						res = utils.parse(res);						
-						if(res){
-							self.peers[peer].socket = {
-								addr: res.addr,
-								id: res.id
-							}	
-							//console.log(prefix.peer + peer + ':' + prefix.socket, res, self.peers[peer].socket)						
-						}
-						endFunc();
-					})
-				})();
+				self.peers[i].socket = {
+					addr: utils.parse(p[i]).addr,
+					id: utils.parse(p[i]).id
+				}
+				endFunc();
 			}else{
 				delete p[i];
 				endFunc();
@@ -529,7 +514,7 @@ Config.prototype.peerServices = function(peer, callback){
 		var count = 0;
 		for(var i in res){			
 			var service = utils.parse(res[i]);
-			console.log(i, service.broker.config.socket)
+			//console.log(i, service.broker.config.socket)
 			if(service.broker.config.socket && service.sharable){
 				console.log('remote service ' + service.name)
 				if(!self.services[i]){
@@ -555,20 +540,6 @@ Config.prototype.peerServices = function(peer, callback){
 					if(count == utils.length(res))
 						callback(null, srv);
 				})
-				/*if(!self.services[service.name]){
-					self.services[service.name] = {}
-					setNewService(self.services[service.name]);				
-				}
-				if(!self.services[service.name].peers)
-						self.services[service.name].peers = {};
-
-				self.services[service.name].peers[peer] = {
-					socket: {
-						addr: service.broker.config.socket.cfa,
-						id: service.broker.config.socket.cfi
-					}
-				};
-				srv[service.name] = self.services[service.name];*/
 			}else{
 				count++;
 				if(count == utils.length(res))
@@ -598,8 +569,6 @@ Config.prototype.peersServices = function(peers, callback){
 	console.log('peers', self.peers)
 	for(var i in self.peers){
 		self.peerServices(i, function(err, res){
-			//console.log(i, res)
-			//console.log(self.peers)
 			if(err)
 				return callback(err, null);
 			count++;
@@ -636,10 +605,10 @@ Config.prototype.setBrokerSocket = function(brokerId, callback){
 			cbi: self.node.id + service + net_dev + 'CB1',
 		};
 
-	console.log(service, brokerConfig);
+	//console.log(service, brokerConfig);
 
 	self.services[service].broker.config.socket = brokerConfig;
-	self.broker.id = brokerId.toString();
+	self.services[service].broker.id = brokerId.toString();
 
 	self.zk.get('/peer/' + self.node.id +'/service/' + service, function(err, res){
 		if(err)
@@ -671,8 +640,7 @@ Config.prototype.newSocketId = function(service, type){
 		id += 'B01001';
 		return id;
 	}
-	else{
-		//console.log('w', service)		
+	else{	
 		id += 'W01';
 		for(var i = 0; i < 999; i++){
 			if(i < 10)
@@ -777,7 +745,8 @@ Config.prototype.addServicePeer = function(service, peerId, peerInfo, callback){
 			return callback(err, null);
 		self._setServiceFields(service);
 		self.services[service].peers[peerId] = peerInfo;
-		callback(null, res);
+		if(callback)
+			callback(null, res);
 	});
 }
 
@@ -791,6 +760,15 @@ Config.prototype.remServicePeer = function(service, peerId, callback){
 		delete self.services[service].peers[peerId];
 		callback(null, res);
 	});
+}
+
+Config.prototype.getPeerSocketInfo = function(peerId, callback){
+	var self = this;
+	self.zk.get('/peer/' + peerId, function(err, peer){
+		if(err)
+			return callback(err, null);			
+		callback(null, utils.parse(peer));
+	});			
 }
 
 Config.prototype.watchPeers = function(callback){
@@ -816,7 +794,7 @@ Config.prototype.watchPeers = function(callback){
 						return callback(null, i);
 				callback(null, null);
 			});
-			
+
 		});
 }
 
