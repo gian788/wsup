@@ -88,7 +88,15 @@ function start(route, handle) {
 				    route(handle, pathname, response, request, args, user);
 		    	});
 		    }else{
-		    	require('../crypto/crypto.js').getuser(args.sessid, function(err, user){	
+		    	//require('../crypto/crypto.js').getuser(args.sessid, function(err, user){	
+		    	
+		    	(function(){
+		    		var user = { s_key: 1829337036,
+					  req_id: 68143,
+					  last_request: 1359473595,
+					  type: '1',
+					  nosqlid: '115313',
+					  uid: '1' }
 				    //console.log(args)
 				    for(var param in args){
 				    	if(!isNaN(args[param]))
@@ -105,7 +113,7 @@ function start(route, handle) {
 					    		}
 				    }
 				    route(handle, pathname, response, request, args, user);
-				});
+				})()//);
 			}
 
 		 });		
