@@ -51,7 +51,7 @@ if(ENV == 'DEV'){
 		port:80
 	};
 	exports.DIRECT_QUERY = {
-		host:'192.168.16.128',
+		host:'192.168.122.101',
 		port:3000
 	};
 	exports.NEO4J = {
@@ -59,7 +59,7 @@ if(ENV == 'DEV'){
 		port:7474
 	};
 	exports.NO_CLICK = {
-		host:'192.168.16.128',
+		host:'192.168.122.101',
 		port:3002	
 	},
 	exports.CASSANDRA = {
@@ -76,7 +76,7 @@ if(ENV == 'DEV'){
 			port: 6379
 		},
 		shared: {
-			ip: '192.168.16.128',
+			ip: '192.168.122.101',
 			port: 6479
 		} 
 	},

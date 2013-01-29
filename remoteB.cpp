@@ -13,7 +13,7 @@
 #include "/srv/server/cpp_test/zeromq-3.2.2/include/zmq_utils.h"
 
 #define SOCK_ID_LEN 12 //nodeId-ServiceId-ServiceProcId, 3char for each field
-#define SOCK_ADDR_LEN 27//22 //(incl null character)
+#define SOCK_ADDR_LEN 28//22 //(incl null character)
 
 using namespace std;
 
