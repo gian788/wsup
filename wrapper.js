@@ -36,7 +36,7 @@ confMod.getServiceInfo(serviceId, nodeId, function(err, res){
 	dealer.on('message', function(){
 		var arr = Array.apply(null, arguments);
 		var msg = utils.parse(arr[arr.length - 1].toString());	
-		console.log('* ', msg)
+		//console.log('* ', msg)
 		if(typeof(obj[msg.fn]) == 'function'){
 			var args = msg.args;		
 			args.push(function(err, res){

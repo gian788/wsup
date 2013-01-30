@@ -28,7 +28,7 @@ dealer.send(['READY']);
 dealer.on('message', function(){
 	var arr = Array.apply(null, arguments);
 	var msg = utils.parse(arr[arr.length - 1].toString());	
-	console.log('* ', msg)
+	//console.log('* ', msg)
 	var contr = msg.args[0],
 		func = msg.args[1];
 	msg.args.splice(0, 2);

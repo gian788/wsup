@@ -68,9 +68,9 @@ function route(handle, pathname, response, request, args, user) {
   }
   if(id)
     args['_id'] = id;
-  console.log(modName+":"+funcName+":")
-  console.dir(args);
-  console.log()
+  //console.log(modName+":"+funcName+":")
+  //console.dir(args);
+  //console.log()
   if(request.headers.origin == "docs.uniants.com")
     funcName = funcName + 'Server';
   handle(modName, funcName, args, request, response, user);	

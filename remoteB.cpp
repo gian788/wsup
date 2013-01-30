@@ -208,8 +208,8 @@ int main(int argc, char* argv[]){
 			//can_rcv = true;
 			//worker = "001tsRW01002";
 			if(can_rcv){
-				printf("Reciving message from frontend\n");
-				printf("%s\n", worker);
+				//printf("Reciving message from frontend\n");
+				//printf("%s\n", worker);
 				/*count++;
 				if(count == 1)
 					watch2 = zmq_stopwatch_start ();
@@ -242,7 +242,7 @@ int main(int argc, char* argv[]){
 
 					msg_rcv_size = zmq_msg_size(&msg_rcv);
 					zmq_msg_init_size(&msg_snd, msg_rcv_size);
-					printf("%s\n", (char*)zmq_msg_data(&msg_rcv));
+					//printf("%s\n", (char*)zmq_msg_data(&msg_rcv));
 					memcpy(zmq_msg_data(&msg_snd), zmq_msg_data(&msg_rcv), msg_rcv_size);
 					zmq_send(is_local ? local_back_socket : cloud_back_socket, &msg_snd, more ? ZMQ_SNDMORE : 0);
 					
@@ -261,7 +261,7 @@ int main(int argc, char* argv[]){
 
 		//local_backend
 		if(items[1].revents & ZMQ_POLLIN){
-			printf("Reciving message from backend\n");
+			//printf("Reciving message from backend\n");
 			//if(i == 1)
 			//		watch = zmq_stopwatch_start ();
 
@@ -329,7 +329,7 @@ int main(int argc, char* argv[]){
 				can_rcv = false;
 			}			
 			if(can_rcv){
-				printf(" <- cloud %d %d\n", cloud_serve_rate_count, items[0].revents);
+				//printf(" <- cloud %d %d\n", cloud_serve_rate_count, items[0].revents);
 				while(1){
 					zmq_msg_init(&msg_rcv);
 					zmq_recv(cloud_front_socket, &msg_rcv, 0);
@@ -365,7 +365,7 @@ int main(int argc, char* argv[]){
 
 		//cloud_backend
 		if(items[3].revents & ZMQ_POLLIN){
-			printf("*Reciving message from cloud backend\n");
+			//printf("*Reciving message from cloud backend\n");
 			is_first_msg = true;
 			while(1){
 				zmq_msg_init(&msg_rcv);
