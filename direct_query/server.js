@@ -90,7 +90,7 @@ function start(route, handle) {
 		    }else{
 		    	//require('../crypto/crypto.js').getuser(args.sessid, function(err, user){	
 		    	
-		    	(function(){
+		    	//(function(){
 		    		var user = { s_key: 1829337036,
 					  req_id: 68143,
 					  last_request: 1359473595,
@@ -113,7 +113,7 @@ function start(route, handle) {
 					    		}
 				    }
 				    route(handle, pathname, response, request, args, user);
-				})()//);
+				//})()//);
 			}
 
 		 });		

@@ -82,7 +82,7 @@ if(ENV == 'DEV'){
 	},
 	exports.LIB = {
 		path: '/srv/server/lib/',
-		modulePath: '/srv/node/lib/models/',
+		modulePath: '/srv/server/lib/models/',
 		controllersPath: '/srv/server/lib/controllers/' 
 	}
 }

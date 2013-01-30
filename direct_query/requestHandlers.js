@@ -11,7 +11,7 @@ cm.ready();
 exports.handle = function(controller, func, args, request, response, user){
 	//res = response;
 	if(!controllersConfig.existsController(controller)){
-		//console.log('Invalid controller specified! : ' +  controller);
+		console.log('Invalid controller specified! : ' +  controller);
 		//TODO replay nothing
 		replay(400, null, response);
 		return false;
@@ -48,9 +48,6 @@ exports.handle = function(controller, func, args, request, response, user){
 				func = 'getclasspublichistory';
 			}
 		break;
-		case 'getcount':
-			return replay(400, null, response);
-		break;
 	}
 	var serveController = function(err, result){		
 		if(err){
@@ -73,11 +70,11 @@ exports.handle = function(controller, func, args, request, response, user){
 
 	delete args['sessid'];
 	var service = controllersConfig.getControllerService(controller, user);
-	//console.log(service, controller, func)
+	console.log(service, controller, func)
 	if(!services[service]){
 		services[service] = cm.getService(controllersConfig.getServicePrefix(service), function(err, res){
 			if(err){
-				//console.log('Not elab ', controller, func)
+				console.log('Not elab ', controller, func)
 				return replay(400, null, response);
 			}
 			callFunc();		

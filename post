@@ -1,0 +1,4 @@
+{
+"query":"START n=node(115314) MATCH (n)-[sub:in_class]->(c)<-[?:prof]-(prof) RETURN c,sub,prof",
+"params": {}
+}

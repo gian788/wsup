@@ -8,7 +8,7 @@ var controllers = {
 	'degreeprogram': true,
 	'document': true,
 	'invite': true,
-	//'notifications': true,
+	'notifications': true,
 	'poll': true,
 	'post': true,
 	'registration': true,
